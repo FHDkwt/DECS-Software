@@ -1,20 +1,43 @@
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, request, jsonify
+
+import secrets
 
 app = Flask(__name__)
 
-@app.route("/")
-def home():
-    return send_from_directory(".", "index.html")
+API_KEY = "decs-demo-key"
 
-@app.post("/outlet/1/on")
-def on():
-    print("Outlet ON")
-    return jsonify(status="on")
+@app.route("/health")
 
-@app.post("/outlet/1/off")
-def off():
-    print("Outlet OFF")
-    return jsonify(status="off")
+def health():
+
+    return {"status": "ok"}
+
+@app.route("/login", methods=["POST"])
+
+def login():
+
+    data = request.json
+
+    if not data or data.get("key") != API_KEY:
+
+        return jsonify({"error": "unauthorized"}), 401
+
+    token = secrets.token_hex(16)
+
+    return jsonify({"token": token})
+
+@app.route("/outlet/on", methods=["POST"])
+
+def outlet_on():
+
+    return jsonify({"status": "outlet ON command sent"})
+
+@app.route("/outlet/off", methods=["POST"])
+
+def outlet_off():
+
+    return jsonify({"status": "outlet OFF command sent"})
 
 if __name__ == "__main__":
+
     app.run(host="0.0.0.0", port=5000)
