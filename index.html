@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DECS Control</title>
+  <style>
+    body { font-family: Arial; text-align: center; background:#111; color:#fff; }
+    button { font-size: 26px; padding: 14px 42px; margin: 14px; border:0; border-radius:12px; }
+    .on { background:#2ecc71; }
+    .off { background:#e74c3c; }
+  </style>
+</head>
+<body>
+  <h2>DECS Smart Outlet</h2>
+
+  <button class="on" onclick="sendCmd('on')">ON</button><br>
+  <button class="off" onclick="sendCmd('off')">OFF</button>
+
+  <p id="status">Status: Unknown</p>
+
+  <script>
+    function sendCmd(cmd) {
+      fetch(`/outlet/1/${cmd}`, { method: "POST" })
+        .then(r => r.json())
+        .then(data => document.getElementById("status").innerText = "Status: " + data.status)
+        .catch(() => document.getElementById("status").innerText = "Status: Error");
+    }
+  </script>
+</body>
+</html>
