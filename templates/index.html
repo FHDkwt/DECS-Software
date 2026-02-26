@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DECS Control Panel</title>
+</head>
+<body>
+  <h2>Smart Plug Control</h2>
+
+  <button onclick="toggle(true)">Turn ON</button>
+  <button onclick="toggle(false)">Turn OFF</button>
+
+  <p id="status">Status: unknown</p>
+
+  <br>
+  <a href="/logout">Logout</a>
+
+  <script>
+    async function toggle(state) {
+      const res = await fetch("/toggle", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({device: "plug1", on: state})
+      });
+      const data = await res.json();
+      document.getElementById("status").innerText =
+        "Status: " + (data.on ? "ON" : "OFF");
+    }
+  </script>
+</body>
+</html>
