@@ -53,8 +53,20 @@ def login():
             session["logged_in"] = True
             return redirect(url_for("home"))
         return "Wrong password", 401
+
     return render_template("login.html")
 
+@app.route("/handshake", methods=["POST"])
+def handshake():
+    data = request.get_json()
+    if data == None:
+        return jsonify({"error": "Invalid JSON"}), 400
+    password = data.get("password")
+    print("Password repr:", repr(password))
+    if password == PASSWORD:
+        return jsonify({"status": "success"})
+    else:
+        return jsonify({"status": "fail"}), 401
 
 @app.route("/logout")
 def logout():
@@ -87,7 +99,7 @@ def toggle():
 
     return jsonify(device=device, on=on)
 
-app.route("/device/update")
+app.route("/device/update", methods=['POST'])
 def device_update():
 	data = request.json
 
@@ -98,7 +110,7 @@ def device_update():
 
 	return jsonify({"command": "none"})
 
-app.route("/ping")
+app.route("/ping", methods=['GET'])
 def ping():
 	return("pong")
 
