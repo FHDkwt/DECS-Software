@@ -10,109 +10,39 @@ except ImportError:
 
 app = Flask(__name__)
 
+API_KEY = "decs-demo-key"
 
-app.secret_key = os.environ.get("DECS_SECRET_KEY", "decs-secret-key")
+@app.route("/health")
 
-# Demo password for the web
-PASSWORD = os.environ.get("DECS_PASSWORD", "decs123")
-
-# Demo device state (later will replace this with real CM5->plug control)
-DEVICE_STATE = {"plug1": False}
-
-# MQTT settings
-MQTT_ENABLED = os.environ.get("DECS_MQTT_ENABLED", "0") == "1"
-MQTT_BROKER = os.environ.get("DECS_MQTT_BROKER", "localhost")
-MQTT_PORT = int(os.environ.get("DECS_MQTT_PORT", "1883"))
-MQTT_TOPIC_PREFIX = os.environ.get("DECS_MQTT_TOPIC_PREFIX", "decs")
-
-mqtt_client = None
-if MQTT_ENABLED and MQTT_AVAILABLE:
-    mqtt_client = mqtt.Client()
-
-
-def publish_mqtt(device: str, on: bool) -> None:
-    """Publish a simple ON/OFF command via MQTT if enabled."""
-    if not (MQTT_ENABLED and mqtt_client):
-        return
-    topic = f"{MQTT_TOPIC_PREFIX}/{device}/control"
-    payload = "ON" if on else "OFF"
-    mqtt_client.publish(topic, payload)
-
-
-@app.route("/")
-def home():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-    return render_template("index.html")
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        if request.form.get("password") == PASSWORD:
-            session["logged_in"] = True
-            return redirect(url_for("home"))
-        return "Wrong password", 401
-
-    return render_template("login.html")
-
-@app.route("/handshake", methods=["POST"])
-def handshake():
-    data = request.get_json()
-    if data == None:
-        return jsonify({"error": "Invalid JSON"}), 400
-    password = data.get("password")
-    print("Password repr:", repr(password))
-    if password == PASSWORD:
-        return jsonify({"status": "success"})
-    else:
-        return jsonify({"status": "fail"}), 401
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
-
-
-@app.get("/health")
 def health():
-    return jsonify(status="ok")
 
+    return {"status": "ok"}
 
-@app.get("/status")
-def status():
-    return jsonify(DEVICE_STATE)
+@app.route("/login", methods=["POST"])
 
+def login():
 
-@app.post("/toggle")
-def toggle():
-    # Protect control endpoint behind login
-    if not session.get("logged_in"):
-        return jsonify(error="unauthorized"), 403
+    data = request.json
 
-    data = request.get_json(silent=True) or {}
-    device = data.get("device", "plug1")
-    on = bool(data.get("on", False))
+    if not data or data.get("key") != API_KEY:
 
-    DEVICE_STATE[device] = on
-    publish_mqtt(device, on)
+        return jsonify({"error": "unauthorized"}), 401
 
-    return jsonify(device=device, on=on)
+    token = secrets.token_hex(16)
 
-app.route("/device/update", methods=['POST'])
-def device_update():
-	data = request.json
+    return jsonify({"token": token})
 
-	device_id = data["device_id"]
-	status = data["status"]
+@app.route("/outlet/on", methods=["POST"])
 
-	print(device_id, status)
+def outlet_on():
 
-	return jsonify({"command": "none"})
+    return jsonify({"status": "outlet ON command sent"})
 
-app.route("/ping", methods=['GET'])
-def ping():
-	return("pong")
+@app.route("/outlet/off", methods=["POST"])
+
+def outlet_off():
+
+    return jsonify({"status": "outlet OFF command sent"})
 
 if __name__ == "__main__":
     # Connect MQTT only when enabled
