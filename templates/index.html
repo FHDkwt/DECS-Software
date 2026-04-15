@@ -1,30 +1,145 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>DECS Control Panel</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DECS Smart Outlet</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f3f3f3;
+      font-family: Arial, sans-serif;
+      color: #222;
+    }
+
+    .card {
+      width: 430px;
+      background: white;
+      border-radius: 18px;
+      padding: 32px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+      text-align: center;
+    }
+
+    .logo {
+      width: 170px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 30px;
+      color: #222;
+    }
+
+    .subtitle {
+      margin-bottom: 20px;
+      color: #666;
+    }
+
+    .status-box {
+      background: #f7f7f7;
+      border: 1px solid #e4e4e4;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 22px;
+      line-height: 1.8;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 8px;
+    }
+
+    button {
+      font-size: 18px;
+      padding: 12px 26px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      color: #111;
+      font-weight: bold;
+    }
+
+    .on {
+      background: #79d69a;
+    }
+
+    .off {
+      background: #ef4444;
+      color: white;
+    }
+
+    a {
+      display: inline-block;
+      margin-top: 22px;
+      color: #666;
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: #111;
+    }
+  </style>
 </head>
 <body>
-  <h2>Smart Plug Control</h2>
+  <div class="card">
+    <img class="logo" src="{{ url_for('static', filename='logo.png') }}" alt="DECS Logo">
+    <h1>DECS Smart Outlet</h1>
+    <div class="subtitle">Control panel for plug 1</div>
 
-  <button onclick="toggle(true)">Turn ON</button>
-  <button onclick="toggle(false)">Turn OFF</button>
+    <div class="status-box">
+      <div id="status">Power Status: Waiting for device</div>
+      <div id="heartbeat">Heartbeat: Waiting for device</div>
+    </div>
 
-  <p id="status">Status: unknown</p>
+    <div class="buttons">
+      <button class="on" onclick="togglePlug(true)">Turn ON</button>
+      <button class="off" onclick="togglePlug(false)">Turn OFF</button>
+    </div>
 
-  <br>
-  <a href="/logout">Logout</a>
+    <a href="/logout">Logout</a>
+  </div>
 
   <script>
-    async function toggle(state) {
-      const res = await fetch("/toggle", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({device: "plug1", on: state})
-      });
-      const data = await res.json();
-      document.getElementById("status").innerText =
-        "Status: " + (data.on ? "ON" : "OFF");
+    async function refreshStatus() {
+      try {
+        const res = await fetch("/status");
+        const data = await res.json();
+
+        const powerText = data.plug1_status || (data.plug1 ? "ON" : "Waiting for device");
+        const heartbeatText = data.plug1_heartbeat || "Waiting for device";
+
+        document.getElementById("status").innerText = "Power Status: " + powerText;
+        document.getElementById("heartbeat").innerText = "Heartbeat: " + heartbeatText;
+      } catch (err) {
+        document.getElementById("status").innerText = "Power Status: Error";
+        document.getElementById("heartbeat").innerText = "Heartbeat: Error";
+      }
     }
+
+    async function togglePlug(state) {
+      try {
+        await fetch("/toggle", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ device: "plug1", on: state })
+        });
+
+        setTimeout(refreshStatus, 300);
+      } catch (err) {
+        document.getElementById("status").innerText = "Power Status: Error";
+      }
+    }
+
+    refreshStatus();
+    setInterval(refreshStatus, 3000);
   </script>
 </body>
 </html>
